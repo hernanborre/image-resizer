@@ -10,3 +10,9 @@ db/*
 pipeline
 .vscode/*
 nodemon.json
+
+**/*.html
+
+**/.git
+**/.svn
+**/.hg
