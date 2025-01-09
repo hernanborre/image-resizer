@@ -1,6 +1,6 @@
 import cors from 'cors';
 import * as dotenv from 'dotenv';
-import express, { Request, Response } from "express";
+import express from "express";
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 import path from 'path';
@@ -41,16 +41,12 @@ process.on('SIGINT', async () => {
 app.use(morgan('dev'))
 app.use(cors());
 app.use(express.json());
-app.use("/api", taskRoutes);
+app.use("/", taskRoutes);
 
 // Load the OpenAPI specification
 const swaggerDocument = YAML.load(path.join(__dirname, '../docs/openapi.yaml'));
 
 // Serve Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-app.get("/", (req: Request, res: Response) => {
-    res.send("Bienvenido a mi image resizer en node.js + TypeScript!!!");
-  });
 
 export default app;
