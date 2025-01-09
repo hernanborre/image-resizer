@@ -1,0 +1,18 @@
+# Ignore artifacts:
+README.md
+node_modules
+dist/*
+build
+coverage
+docs
+infrastructure
+db/*
+pipeline
+.vscode/*
+nodemon.json
+
+**/*.html
+
+**/.git
+**/.svn
+**/.hg

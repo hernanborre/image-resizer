@@ -1,0 +1,149 @@
+openapi: 3.0.0
+info:
+  title: Image Processing API
+  version: 1.0.0
+  description: API for managing image processing tasks
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+paths:
+  /tasks:
+    post:
+      summary: Create a new image processing task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - imagePath
+              properties:
+                imagePath:
+                  type: string
+                  description: Local path or URL of the original image
+                  example: "https://example.com/image.jpg"
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskCreated'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{taskId}:
+    get:
+      summary: Get task status and results
+      operationId: getTask
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the task to retrieve
+          example: "65d4a54b89c5e342b2c2c5f6"
+      responses:
+        '200':
+          description: Task details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetails'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    TaskCreated:
+      type: object
+      required:
+        - taskId
+        - status
+        - price
+      properties:
+        taskId:
+          type: string
+          example: "65d4a54b89c5e342b2c2c5f6"
+        status:
+          type: string
+          enum: [pending]
+          example: "pending"
+        price:
+          type: number
+          format: float
+          description: Randomly assigned price between 5 and 50
+          example: 25.5
+
+    TaskDetails:
+      type: object
+      required:
+        - taskId
+        - status
+        - price
+      properties:
+        taskId:
+          type: string
+          example: "65d4a54b89c5e342b2c2c5f6"
+        status:
+          type: string
+          enum: [pending, completed, failed]
+          example: "completed"
+        price:
+          type: number
+          format: float
+          example: 25.5
+        images:
+          type: array
+          description: Array of processed images (only present when status is completed)
+          items:
+            type: object
+            required:
+              - resolution
+              - path
+            properties:
+              resolution:
+                type: string
+                enum: ["1024", "800"]
+                example: "1024"
+              path:
+                type: string
+                example: "/output/image1/1024/f322b730b287da77e1c519c7ffef4fc2.jpg"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "INVALID_INPUT"
+        message:
+          type: string
+          example: "Invalid image path provided"
