@@ -6,7 +6,8 @@ Servicio para el redimensionamiento de imágenes a través de endpoints REST.
 Este servicio permite redimensionar imágenes a través de dos endpoints diferentes, ofreciendo flexibilidad para el procesamiento de imágenes según las necesidades del usuario.
 
 ## Endpoints
-
+Se pueden consultar y probar ambos endpoints a través de la definición de OpenAPI disponible luego de ejecutar el proyectos en: 
+[OpenAPI Specification](http://localhost:3001/api-docs)
 
 ### 1. Redimensionar una imagen por POST form-part file
 POST /tasks
@@ -25,6 +26,7 @@ GET /tasks/:taskId
 ## Requisitos
 - Node.js 20.18 o superior
 - npm 10.9 o superior
+- Docker y Docker compose
 
 ## Pre-ejecución
 1. Tener instalado Docker y Docker Compose.
