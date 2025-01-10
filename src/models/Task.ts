@@ -5,8 +5,8 @@ interface IImage {
   //_id?: Schema.Types.ObjectId;
   resolution: string;
   path: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ITask extends Document {
