@@ -5,7 +5,7 @@ info:
   description: API for managing image processing tasks
 
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:3001
     description: Development server
 
 paths:
@@ -16,35 +16,85 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               required:
-                - imagePath
+                - image
               properties:
-                imagePath:
+                image:
                   type: string
-                  description: Local path or URL of the original image
-                  example: "https://example.com/image.jpg"
+                  format: binary
+                  description: Image file to be processed
       responses:
         '201':
-          description: Task created successfully
+          description: Task created and image processed successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskCreated'
+                type: object
+                required:
+                  - message
+                  - taskId
+                  - price
+                  - status
+                  - inputLocalOriginalImage
+                  - images
+                properties:
+                  message:
+                    type: string
+                    example: "Image processed successfully"
+                  taskId:
+                    type: string
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                  price:
+                    type: number
+                    example: 25.5
+                  status:
+                    type: string
+                    enum: [pending, completed, failed]
+                    example: "completed"
+                  inputLocalOriginalImage:
+                    type: string
+                    example: "/input/example.jpg"
+                  images:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - resolution
+                        - path
+                      properties:
+                        resolution:
+                          type: string
+                          enum: ["1024", "800"]
+                          example: "1024"
+                        path:
+                          type: string
+                          example: "/output/1024/f322b730b287da77e1c519c7ffef4fc2.jpg"
         '400':
-          description: Invalid input
+          description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No image file uploaded"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error processing image"
+                  error:
+                    type: object
+                    description: Error details
 
   /tasks/{taskId}:
     get:
@@ -57,7 +107,7 @@ paths:
           schema:
             type: string
           description: ID of the task to retrieve
-          example: "65d4a54b89c5e342b2c2c5f6"
+          example: "7f99e3ef-1d3a-49e4-ae20-962e3bc71e38"
       responses:
         '200':
           description: Task details retrieved successfully
@@ -86,6 +136,9 @@ components:
         - taskId
         - status
         - price
+        - originalPath
+        - createdAt
+        - updatedAt
       properties:
         taskId:
           type: string
@@ -99,6 +152,15 @@ components:
           format: float
           description: Randomly assigned price between 5 and 50
           example: 25.5
+        originalPath:
+          type: string
+          example: "/input/image.jpg"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     TaskDetails:
       type: object
@@ -106,6 +168,9 @@ components:
         - taskId
         - status
         - price
+        - originalPath
+        - createdAt
+        - updatedAt
       properties:
         taskId:
           type: string
@@ -118,14 +183,18 @@ components:
           type: number
           format: float
           example: 25.5
+        originalPath:
+          type: string
+          example: "/input/image.jpg"
         images:
           type: array
-          description: Array of processed images (only present when status is completed)
           items:
             type: object
             required:
               - resolution
               - path
+              - createdAt
+              - updatedAt
             properties:
               resolution:
                 type: string
@@ -134,6 +203,18 @@ components:
               path:
                 type: string
                 example: "/output/image1/1024/f322b730b287da77e1c519c7ffef4fc2.jpg"
+              createdAt:
+                type: string
+                format: date-time
+              updatedAt:
+                type: string
+                format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     Error:
       type: object
