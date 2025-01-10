@@ -1,17 +1,26 @@
+import crypto from 'crypto';
 import { Request, Response } from 'express';
+import fs from 'fs/promises';
+import path from "path";
+import sharp from 'sharp';
+import { ITask } from '../models/Task';
 import { TaskService } from '../services/TaskService';
 
 const taskService = new TaskService();
 
-export const getTask = async (req: Request, res: Response) => {
-  try {
-    const taskId = req.params.taskId;
-    const taskDetails = await taskService.getTaskDetails(taskId);
+export const getTask = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const taskId = req.params.taskId;
 
-    res.status(200).json(taskDetails);
-  } catch (error: any) {
-    res.status(404).json({ message: error.message });
-  }
+      const task = await taskService.getTaskDetails(taskId);
+      if (!task) {
+            res.status(404).json({ message: "Task not found" });
+            return;
+        }
+        res.json(task);
+    } catch (error:any) {
+        res.status(500).json({ message: "Internal ServerError retrieving task", error: error.message });
+    }
 };
 
 export const getAllTasks = async (req: Request, res: Response) => {
@@ -23,3 +32,72 @@ export const getAllTasks = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error fetching tasks', error });
     }
   };
+
+export const createTask = async (req: Request & { file?: Express.Multer.File }, res: Response): Promise<any> => {
+    let newTask: ITask | null = null;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No image file uploaded' });
+        }
+
+        const inputLocalOriginalImage = path.join('/', 'input', req.file.originalname);
+        newTask = await taskService.createTask(inputLocalOriginalImage);
+
+        const originalName = path.parse(req.file.originalname).name;
+        const extension = path.parse(req.file.originalname).ext;
+        const inputPath = req.file.path;
+        
+        // Create output directories
+        const baseOutputDir = path.join(__dirname, '..', '..', 'output', originalName);
+        await fs.mkdir(path.join(baseOutputDir, '1024'), { recursive: true });
+        await fs.mkdir(path.join(baseOutputDir, '800'), { recursive: true });
+
+        // Process images and get their buffers
+        const [image1024Buffer, image800Buffer] = await Promise.all([
+            sharp(inputPath)
+                .resize(1024, null, { withoutEnlargement: true })
+                .toBuffer(),
+            sharp(inputPath)
+                .resize(800, null, { withoutEnlargement: true })
+                .toBuffer()
+        ]);
+
+        // Calculate MD5 for each variant
+        const md5Hash1024 = crypto.createHash('md5').update(image1024Buffer).digest('hex');
+        const md5Hash800 = crypto.createHash('md5').update(image800Buffer).digest('hex');
+
+        // Save files with their respective hashes
+        await Promise.all([
+            fs.writeFile(path.join(baseOutputDir, '1024', `${md5Hash1024}${extension}`), image1024Buffer),
+            fs.writeFile(path.join(baseOutputDir, '800', `${md5Hash800}${extension}`), image800Buffer)
+        ]);
+
+        const output1024 = path.join('/', 'output', '1024', `${md5Hash1024}${extension}`);
+        const output800 = path.join('/', 'output', '800', `${md5Hash800}${extension}`);
+
+        // Update task with completed status and images
+        newTask.status = 'completed';
+        newTask.images = [
+            { resolution: "1024", path: output1024 },
+            { resolution: "800", path: output800 }
+        ];
+        await taskService.updateTask(newTask.taskId, newTask);
+
+        res.status(201).json({
+            message: 'Image processed successfully',
+            taskId: newTask.taskId,
+            price: newTask.price,
+            status: newTask.status,
+            inputLocalOriginalImage,
+            images: [
+                { resolution: '1024', path: output1024 },
+                { resolution: '800', path: output800 }
+            ]
+        });
+    } catch (error) {
+        if (newTask) {
+            await taskService.updateTask(newTask.taskId, { status: "failed" });
+        }
+        res.status(500).json({ message: 'Error processing image', error });
+    }
+};
