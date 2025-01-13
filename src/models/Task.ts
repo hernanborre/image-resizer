@@ -2,7 +2,6 @@ import mongoose, { Document, Schema } from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 
 interface IImage {
-  //_id?: Schema.Types.ObjectId;
   resolution: string;
   path: string;
   createdAt?: Date;
@@ -10,7 +9,6 @@ interface IImage {
 }
 
 export interface ITask extends Document {
-  //_id: Schema.Types.ObjectId;
   taskId: string;
   status: "pending" | "completed" | "failed";
   price: number;
@@ -48,7 +46,5 @@ const TaskSchema: Schema = new Schema({
   originalPath: { type: String },
   images: { type: [ImageSchema], default: [] },
 }, { timestamps: true });
-
-//TaskSchema.index({ taskId: 1 });
 
 export const TaskModel = mongoose.model<ITask>("Task", TaskSchema);

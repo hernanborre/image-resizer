@@ -1,11 +1,12 @@
 import cors from 'cors';
 import * as dotenv from 'dotenv';
-import express from "express";
+import express, { ErrorRequestHandler } from "express";
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 import path from 'path';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import { errorHandler } from './middleware/errorHandler';
 import taskRoutes from "./routes/taskRouters";
 
 dotenv.config();
@@ -48,5 +49,7 @@ const swaggerDocument = YAML.load(path.join(__dirname, '../docs/openapi.yaml'));
 
 // Serve Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.use(errorHandler as ErrorRequestHandler);
 
 export default app;
