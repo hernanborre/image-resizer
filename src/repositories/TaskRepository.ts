@@ -16,9 +16,7 @@ export class TaskRepository {
   }
 
   async findByTaskId(taskId: string): Promise<ITask | null> {
-    const result =  await TaskModel.findOne({ taskId });
-    console.log('Query explanation:', JSON.stringify(result, null, 2));
-    return result;
+    return  await TaskModel.findOne({ taskId });
   }
 
   async findAll(): Promise<ITask[]> {

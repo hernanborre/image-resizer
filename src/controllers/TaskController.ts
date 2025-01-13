@@ -1,25 +1,30 @@
 import crypto from 'crypto';
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from "path";
 import sharp from 'sharp';
 import { ITask } from '../models/Task';
 import { TaskService } from '../services/TaskService';
+import { NotFoundError, ProcessingError, ValidationError } from '../utils/errors';
 
 const taskService = new TaskService();
 
-export const getTask = async (req: Request, res: Response): Promise<void> => {
+export const getTask = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
     try {
-      const taskId = req.params.taskId;
-
-      const task = await taskService.getTaskDetails(taskId);
-      if (!task) {
-            res.status(404).json({ message: "Task not found" });
-            return;
+        const taskId = req.params.taskId;
+        const task = await taskService.getTaskDetails(taskId);
+        
+        if (!task) {
+            throw new NotFoundError(`Task with ID ${taskId} not found`);
         }
+        
         res.json(task);
-    } catch (error:any) {
-        res.status(500).json({ message: "Internal ServerError retrieving task", error: error.message });
+    } catch (error) {
+        next(error);
     }
 };
 
@@ -33,11 +38,15 @@ export const getAllTasks = async (req: Request, res: Response) => {
     }
   };
 
-export const createTask = async (req: Request & { file?: Express.Multer.File }, res: Response): Promise<any> => {
+export const createTask = async (
+  req: Request & { file?: Express.Multer.File }, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
     let newTask: ITask | null = null;
     try {
         if (!req.file) {
-            return res.status(400).json({ message: 'No image file uploaded' });
+            throw new ValidationError('No image file uploaded');
         }
 
         const inputLocalOriginalImage = path.join('/', 'input', req.file.originalname);
@@ -98,6 +107,6 @@ export const createTask = async (req: Request & { file?: Express.Multer.File }, 
         if (newTask) {
             await taskService.updateTask(newTask.taskId, { status: "failed" });
         }
-        res.status(500).json({ message: 'Error processing image', error });
+        next(error instanceof Error ? new ProcessingError(error.message, error) : error);
     }
 };
